@@ -520,6 +520,7 @@ void Block::updateSprout(sf::Vector2i pos) {
 
   cluster.lType[pos.x % 32] = BRANCH;
   currentCellEnergy = sc::CELL_INITIAL_ENERGY;
+  cluster.lnewEnergy[pos.x % 32] = sc::CELL_INITIAL_ENERGY;
   cluster.lEnergyDir[pos.x % 32] = oppositeDirectionBitmask(parentBitmask);
 
   if (currentGen.right) {
