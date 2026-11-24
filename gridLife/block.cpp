@@ -755,13 +755,13 @@ void Block::render(sf::RenderTarget *target) {
   for (int x = relevantCells.position.x; x < relevantCells.position.x + relevantCells.size.x; ++x) {
     for (int y = relevantCells.position.y; y < relevantCells.position.y + relevantCells.size.y; ++y) {
       sf::Vector2i pos{x, y};
-      CellType &type = ((CellType *)&getCluster(pos).type)[pos.x % 32];
+      CellType &type = getCluster(pos).lType[pos.x % 32];
 
       if (!type) {
         continue;
       }
 
-      float intensity = getCluster(pos).lEnergy[pos.x%32] * 20.0f;
+      float intensity = getCluster(pos).lEnergy[pos.x%32] * 20.0f + 80.0f;
       sf::Color branchColor(intensity, intensity, intensity);
 
       for (int i = 0; i < 4; ++i) {
