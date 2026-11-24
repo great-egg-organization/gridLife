@@ -6,7 +6,7 @@ namespace sc{
 	constexpr float MUTATION_RATE = 0.04f;
 	constexpr size_t GENOME_SIZE = 1 << 5;
 	constexpr uint32_t CELL_LIFETIME = 80;
-	constexpr float LEAF_TICK_ENERGY_GEN = 100.0f;
+	constexpr float LEAF_TICK_ENERGY_GEN = 10.0f;
 	constexpr float ROOT_SOIL_TICK_DEPLETION_FRACTION = 0.2f;
 	constexpr float ROOT_EFFICIENCY = 0.9f;
 	constexpr float ANTENNA_SOIL_TICK_DEPLETION_FRACTION = 0.2f;
@@ -30,6 +30,6 @@ namespace sc{
 	
 	constexpr char UPDATED_FLAG = 127;
 	
-	constexpr sf::Vector2i BLOCK_DIM = sf::Vector2i{64, 64};
+	constexpr sf::Vector2i BLOCK_DIM = sf::Vector2i{512, 512};
 	constexpr size_t BLOCK_CELL_COUNT = BLOCK_DIM.x*BLOCK_DIM.y;
 }
