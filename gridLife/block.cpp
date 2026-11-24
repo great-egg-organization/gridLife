@@ -760,7 +760,7 @@ void Block::render(sf::RenderTarget *target) {
       {
         float soilEnergy = getCluster(pos).lSoilEnergy[pos.x % 32];
         float soilOrganicMatter = getCluster(pos).lSoilOrganicMatter[pos.x % 32];
-        std::uint8_t soilEnergyLevel = (std::uint8_t)(255.0f * std::min(soilEnergy / sc::NORMAL_SOIL_ENERGY_LEVEL, 1.0f));
+        std::uint8_t soilEnergyLevel = (std::uint8_t)(255.0f * std::clamp((soilEnergy - sc::NORMAL_SOIL_ENERGY_LEVEL) / (sc::LETHAL_SOIL_ENERGY - sc::NORMAL_SOIL_ENERGY_LEVEL), 0.0f, 1.0f));
         std::uint8_t organicMatterLevel = (std::uint8_t)(255.0f * std::min(soilOrganicMatter / sc::LETHAL_ORGANIC_MATTER, 1.0f));
         appendRectangle(vertices, sf::Vector2f((float)x, (float)y), sf::Vector2f(1.f, 1.f), sf::Color(organicMatterLevel, soilEnergyLevel, 0));
       }
