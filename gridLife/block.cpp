@@ -726,6 +726,18 @@ bool Block::verifyGridIntegrity() const {
   return true;
 }
 
+CellCluster &Block::getCluster(sf::Vector2i pos) {
+  pos = wrapToBlockDim(pos);
+  assert(pos.x > -1 && pos.y > -1);
+  return cells[(pos.x + pos.y * sc::BLOCK_DIM.x) / 32];
+}
+
+const CellCluster &Block::getCluster(sf::Vector2i pos) const {
+  pos = wrapToBlockDim(pos);
+  assert(pos.x > -1 && pos.y > -1);
+  return cells[(pos.x + pos.y * sc::BLOCK_DIM.x) / 32];
+}
+
 #ifdef INTERACTIVE_SIM
 static void appendTriangle(sf::VertexArray &vertices, sf::Vector2f a, sf::Vector2f b, sf::Vector2f c, sf::Color color) {
   vertices.append(sf::Vertex{a, color});
@@ -748,18 +760,6 @@ static void appendEllipse(sf::VertexArray &vertices, sf::Vector2f position, floa
     sf::Vector2f b = center + sf::Vector2f{std::cos(angleB) * radius * scale.x, std::sin(angleB) * radius * scale.y};
     appendTriangle(vertices, center, a, b, color);
   }
-}
-
-CellCluster &Block::getCluster(sf::Vector2i pos) {
-  pos = wrapToBlockDim(pos);
-  assert(pos.x > -1 && pos.y > -1);
-  return cells[(pos.x + pos.y * sc::BLOCK_DIM.x) / 32];
-}
-
-const CellCluster &Block::getCluster(sf::Vector2i pos) const {
-  pos = wrapToBlockDim(pos);
-  assert(pos.x > -1 && pos.y > -1);
-  return cells[(pos.x + pos.y * sc::BLOCK_DIM.x) / 32];
 }
 
 void Block::render(sf::RenderTarget *target) {

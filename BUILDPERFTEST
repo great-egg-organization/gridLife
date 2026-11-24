@@ -1,0 +1,2 @@
+cmake -S . -B out -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo
+cmake --build out --parallel 12

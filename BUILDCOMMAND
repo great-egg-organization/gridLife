@@ -1,2 +1,2 @@
-cmake -S . -B out
+cmake -S . -B out -Dinteractive_sim:BOOL=true -DCMAKE_BUILD_TYPE:STRING=Release
 cmake --build out --parallel 12
