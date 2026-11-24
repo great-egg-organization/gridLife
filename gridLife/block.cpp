@@ -755,6 +755,15 @@ void Block::render(sf::RenderTarget *target) {
   for (int x = relevantCells.position.x; x < relevantCells.position.x + relevantCells.size.x; ++x) {
     for (int y = relevantCells.position.y; y < relevantCells.position.y + relevantCells.size.y; ++y) {
       sf::Vector2i pos{x, y};
+
+      {
+        float soilEnergy = getCluster(pos).lSoilEnergy[pos.x % 32];
+        float soilOrganicMatter = getCluster(pos).lSoilOrganicMatter[pos.x % 32];
+        std::uint8_t soilEnergyLevel = (std::uint8_t)(255.0f * std::min(soilEnergy / sc::NORMAL_SOIL_ENERGY_LEVEL, 1.0f));
+        std::uint8_t organicMatterLevel = (std::uint8_t)(255.0f * std::min(soilOrganicMatter / sc::LETHAL_ORGANIC_MATTER, 1.0f));
+        appendRectangle(vertices, sf::Vector2f((float)x, (float)y), sf::Vector2f(1.f, 1.f), sf::Color(organicMatterLevel, soilEnergyLevel, 0));
+      }
+
       CellType &type = ((CellType *)&getCluster(pos).type)[pos.x % 32];
 
       if (!type) {
