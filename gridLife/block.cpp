@@ -206,13 +206,14 @@ void Block::step() {
   ADD_CHECK(verifyGridIntegrity());
 }
 
-static inline __m256 approachAVX2(__m256 s, __m256 m, __m256 x) {
-  // max(min(x+s,m),x-s)
-
-  __m256 xPlusS = _mm256_add_ps(x, s);
-  __m256 xMinS = _mm256_sub_ps(x, s);
-  __m256 min = _mm256_min_ps(xPlusS, m);
-  return _mm256_max_ps(min, xMinS);
+static inline __m256 approachAVX2(__m256 s, __m256 m, __m256 t, __m256 x) {
+  // max(min(tx+s,m),tx-s)
+	
+	__m256 xMult = _mm256_mul_ps(x, t);
+  __m256 txPlusS = _mm256_add_ps(xMult, s);
+  __m256 txMinS = _mm256_sub_ps(xMult, s);
+  __m256 min = _mm256_min_ps(txPlusS, m);
+  return _mm256_max_ps(min, txMinS);
 }
 
 void Block::update32Cells(sf::Vector2i pos) {
@@ -223,11 +224,12 @@ void Block::update32Cells(sf::Vector2i pos) {
   {
     __m256 s = _mm256_set1_ps(sc::SOIL_ENERGY_TICK_CHANGE_AMOUNT);
     __m256 m = _mm256_set1_ps(sc::NORMAL_SOIL_ENERGY_LEVEL);
+    __m256 t = _mm256_set1_ps(sc::SOIL_ENERGY_TICK_DECAY_FACTOR);
 
-    cluster.soilEnergy[0] = approachAVX2(s, m, cluster.soilEnergy[0]);
-    cluster.soilEnergy[1] = approachAVX2(s, m, cluster.soilEnergy[1]);
-    cluster.soilEnergy[2] = approachAVX2(s, m, cluster.soilEnergy[2]);
-    cluster.soilEnergy[3] = approachAVX2(s, m, cluster.soilEnergy[3]);
+    cluster.soilEnergy[0] = approachAVX2(s, m, t, cluster.soilEnergy[0]);
+    cluster.soilEnergy[1] = approachAVX2(s, m, t, cluster.soilEnergy[1]);
+    cluster.soilEnergy[2] = approachAVX2(s, m, t, cluster.soilEnergy[2]);
+    cluster.soilEnergy[3] = approachAVX2(s, m, t, cluster.soilEnergy[3]);
   }
   ADD_CHECK([this](){return verifyGridIntegrity();});
 

@@ -13,13 +13,14 @@ namespace sc{
 	constexpr float ANTENNA_EFFICIENCY = 0.9f;
 	constexpr float CELL_CREATE_COSTS[6] = {0, 80, 80, 80, 80, 80};
 	constexpr float CELL_INITIAL_ENERGY = 10;
-	constexpr float LETHAL_ORGANIC_MATTER = 800;
+	constexpr float LETHAL_ORGANIC_MATTER = 4000;
 	constexpr float LETHAL_SOIL_ENERGY = 800;
 	constexpr float CELL_DEATH_BASE_ENERGY = 60;
 	constexpr float CELL_DEATH_ORGANIC_MATTER = 60;
-	constexpr float CELL_DEATH_ENERGY_INTO_SOIL_FRACTION = 0.1f;
+	constexpr float CELL_DEATH_ENERGY_INTO_SOIL_FRACTION = 0.01f;
 	constexpr float NORMAL_SOIL_ENERGY_LEVEL = 400;
 	constexpr float SOIL_ENERGY_TICK_CHANGE_AMOUNT = 4.0;
+	constexpr float SOIL_ENERGY_TICK_DECAY_FACTOR = 0.98f;
 	
 	enum Direction : char {
 		ABOVEBIT = 1,
