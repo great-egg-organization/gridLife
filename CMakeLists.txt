@@ -11,6 +11,8 @@ project ("gridLife")
 set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 set(CMAKE_BUILD_TYPE Release)
 
+add_compile_definitions(INTERACTIVE_SIM)
+
 set(CMAKE_CXX_FLAGS "-march=native -mtune=native")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 20)

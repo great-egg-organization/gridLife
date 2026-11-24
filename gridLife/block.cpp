@@ -191,17 +191,23 @@ void Block::step() {
   size_t elementCount = cells.size();
   CellCluster *data = cells.data();
   __m256i ZERO = _mm256_setzero_si256();
-  for (size_t i = 0; i < elementCount; i += 4) {
+  for (size_t i = 0; i < elementCount; ++i) {
     cells[i].updated = ZERO;
-    cells[i + 1].updated = ZERO;
-    cells[i + 2].updated = ZERO;
-    cells[i + 3].updated = ZERO;
+    for (int j=0; j < 4; ++j){
+      cells[i].newEnergy[j] = cells[i].energy[j];
+    }
   }
   
   for (int y = 0; y < sc::BLOCK_DIM.y; ++y) {
     for (int x = 0; x < sc::BLOCK_DIM.x; x += 32) {
       update32Cells(sf::Vector2i{x, y});
       ADD_CHECK([this](){return verifyGridIntegrity();});
+    }
+  }
+  
+  for (size_t i = 0; i < elementCount; ++i) {
+    for (int j=0; j < 4; ++j){
+      cells[i].energy[j] = cells[i].newEnergy[j];
     }
   }
   
@@ -311,8 +317,6 @@ void Block::update32Cells(sf::Vector2i pos) {
   do32CellEnergyTransfers(pos, _mm256_andnot_si256(sproutMask, toUpdate));
   ADD_CHECK([this](){return verifyGridIntegrity();});
 
-  memcpy(cluster.energy, cluster.newEnergy, sizeof(cluster.energy[0]) * 4);
-
 	cluster.updated = _mm256_set1_epi8(sc::UPDATED_FLAG);
 }
 
@@ -378,7 +382,7 @@ void Block::do32CellEnergyTransfers(sf::Vector2i pos, __m256i updateMask) {
 
   for (int i = 0; i < 4; ++i) {
     __m256 countFloat = _mm256_cvtepi32_ps(energyTransferCounts[i]);
-    __m256 energyTransferAmounts = _mm256_blendv_ps(_mm256_div_ps(cells.energy[i], countFloat), _mm256_setzero_ps(),_mm256_cmp_ps(countFloat, _mm256_setzero_ps(), _CMP_EQ_OS));
+    __m256 energyTransferAmounts = _mm256_blendv_ps(_mm256_div_ps(cells.energy[i], countFloat), _mm256_setzero_ps(), _mm256_cmp_ps(countFloat, _mm256_setzero_ps(), _CMP_EQ_OS));
     cells.newEnergy[i] = _mm256_sub_ps(cells.newEnergy[i], _mm256_mul_ps(countFloat, energyTransferAmounts));
 
     // above
@@ -788,7 +792,7 @@ void Block::render(sf::RenderTarget *target) {
         continue;
       }
 
-      float intensity = getCluster(pos).lEnergy[pos.x%32] * 20.0f + 80.0f;
+      float intensity = getCluster(pos).lEnergy[pos.x%32] * 20.0f + 20.0f;
       sf::Color branchColor(intensity, intensity, intensity);
 
       for (int i = 0; i < 4; ++i) {
@@ -817,7 +821,7 @@ void Block::render(sf::RenderTarget *target) {
       case BRANCH:
 				break;
       case SPROUT: {
-        float brightness = 1.0f;//2.0f / (std::expf(getCluster(pos).lEnergy[pos.x%32]/sc::CELL_CREATE_COSTS[BRANCH])+1.0f)-1.0f;
+        float brightness = getCluster(pos).lEnergy[pos.x%32]*0.001f/sc::CELL_CREATE_COSTS[BRANCH];
         appendEllipse(vertices, sf::Vector2f(x, y), 0.5f, sf::Vector2f{1.f, 1.f}, 12, sf::Color(255, 255, 255, 255 * brightness));
         break;
       }

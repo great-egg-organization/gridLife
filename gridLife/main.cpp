@@ -1,6 +1,7 @@
 #include "automaticRerunSystem.h"
 
 #ifdef INTERACTIVE_SIM
+#include <iostream>
 #include <GL/glew.h>
 #include <GL/glut.h>
 #include <SFML/Graphics.hpp>
@@ -80,8 +81,8 @@ void interactiveSim() {
 }
 
 int main() { interactiveSim(); }
-#else
 
+#else
 void performanceTest() {
   AutomaticRerunSystem sim;
   sf::Clock clock;

@@ -33,6 +33,6 @@ namespace sc{
 	
 	constexpr char UPDATED_FLAG = 127;
 	
-	constexpr sf::Vector2i BLOCK_DIM = sf::Vector2i{512, 512};
+	constexpr sf::Vector2i BLOCK_DIM = sf::Vector2i{128, 128};
 	constexpr size_t BLOCK_CELL_COUNT = BLOCK_DIM.x*BLOCK_DIM.y;
 }
