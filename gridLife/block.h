@@ -1,16 +1,18 @@
 #pragma once
 
 #include "simConstants.h"
+#include <array>
+#include <atomic>
+#include <immintrin.h>
+#include <random>
+#ifdef INTERACTIVE_SIM
 #include <GL/glew.h>
 #include <GL/glut.h>
 #include <SFML/Graphics.hpp>
 #include <SFML/Graphics/Shader.hpp>
 #include <SFML/System.hpp>
 #include <SFML/System/Vector2.hpp>
-#include <array>
-#include <atomic>
-#include <immintrin.h>
-#include <random>
+#endif
 
 enum CellType : unsigned char { NONE, LEAF, BRANCH, SPROUT, ROOT, ANTENNA };
 
@@ -85,7 +87,9 @@ public:
   Block(AutomaticRerunSystem*);
 
   void step();
+#ifdef INTERACTIVE_SIM
   void render(sf::RenderTarget *);
+#endif
 
   void kill(sf::Vector2i pos);
 

@@ -6,6 +6,8 @@ namespace sc{
 	constexpr float MUTATION_RATE = 0.04f;
 	constexpr size_t GENOME_SIZE = 1 << 5;
 	constexpr uint32_t CELL_LIFETIME = 80;
+	constexpr float CELL_TICK_ENERGY_CONSUMPTION = 1.0f;
+	constexpr float CELL_TICK_ENERGY_DECAY_FACTOR = 0.95f;
 	constexpr float LEAF_TICK_ENERGY_GEN = 10.0f;
 	constexpr float ROOT_SOIL_TICK_DEPLETION_FRACTION = 0.2f;
 	constexpr float ROOT_EFFICIENCY = 0.9f;

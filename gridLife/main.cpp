@@ -1,13 +1,10 @@
 #include "automaticRerunSystem.h"
-#include "simConstants.h"
+
+#ifdef INTERACTIVE_SIM
 #include <GL/glew.h>
 #include <GL/glut.h>
 #include <SFML/Graphics.hpp>
-#include <SFML/Graphics/RenderWindow.hpp>
-#include <SFML/System/Vector2.hpp>
 #include <SFML/Window.hpp>
-#include <SFML/Window/Keyboard.hpp>
-#include <iostream>
 
 void initApp() {
   sf::Window fakeWin;
@@ -82,14 +79,15 @@ void interactiveSim() {
   }
 }
 
+int main() { interactiveSim(); }
+#else
+
 void performanceTest() {
   AutomaticRerunSystem sim;
   sf::Clock clock;
   
-  while (true){
-    sim.step();
-    std::cout << clock.restart().asSeconds() << "\n";
-  }
+  sim.go();
 }
 
-int main() { interactiveSim(); }
+int main() { performanceTest(); }
+#endif

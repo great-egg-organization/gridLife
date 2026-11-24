@@ -2,6 +2,7 @@
 #include "simConstants.h"
 #include "automaticRerunSystem.h"
 #include <algorithm>
+#include <cmath>
 #include <cstring>
 #include <immintrin.h>
 #include <math.h>
@@ -120,6 +121,7 @@ constexpr char bitmaskFromOffset(sf::Vector2i offset) {
   }
 
 	assert(false);
+	return 0;
 }
 
 bool mutateGenome(Gen* first, Gen* last, std::ranlux48 &engine) {
@@ -235,6 +237,17 @@ void Block::update32Cells(sf::Vector2i pos) {
 
   if (_mm256_testz_si256(toUpdate, toUpdate)) {
     return;
+  }
+  
+  {
+    __m256 s = _mm256_set1_ps(sc::CELL_TICK_ENERGY_CONSUMPTION);
+    __m256 m = _mm256_setzero_ps();
+    __m256 t = _mm256_set1_ps(sc::CELL_TICK_ENERGY_DECAY_FACTOR);
+    
+    cluster.energy[0] = approachAVX2(s, m, t, cluster.energy[0]);
+    cluster.energy[1] = approachAVX2(s, m, t, cluster.energy[1]);
+    cluster.energy[2] = approachAVX2(s, m, t, cluster.energy[2]);
+    cluster.energy[3] = approachAVX2(s, m, t, cluster.energy[3]);
   }
 
   int updateMask = _mm256_movemask_epi8(toUpdate);
@@ -709,6 +722,7 @@ bool Block::verifyGridIntegrity() const {
   return true;
 }
 
+#ifdef INTERACTIVE_SIM
 static void appendTriangle(sf::VertexArray &vertices, sf::Vector2f a, sf::Vector2f b, sf::Vector2f c, sf::Color color) {
   vertices.append(sf::Vertex{a, color});
   vertices.append(sf::Vertex{b, color});
@@ -753,19 +767,22 @@ void Block::render(sf::RenderTarget *target) {
 		std::min(sc::BLOCK_DIM.x - relevantCells.position.x,(int)(viewRect.position.x + viewRect.size.x + 1)),
 		std::min((int)sc::BLOCK_DIM.y - relevantCells.position.y, (int)(viewRect.position.y + viewRect.size.y + 1))
 	};
+	
+	for (int x = relevantCells.position.x; x < relevantCells.position.x + relevantCells.size.x; ++x) {
+    for (int y = relevantCells.position.y; y < relevantCells.position.y + relevantCells.size.y; ++y) {
+    	sf::Vector2i pos{x, y};
+      float soilEnergy = getCluster(pos).lSoilEnergy[pos.x % 32];
+      float soilOrganicMatter = getCluster(pos).lSoilOrganicMatter[pos.x % 32];
+      std::uint8_t soilEnergyLevel = (std::uint8_t)(255.0f * std::clamp((soilEnergy - sc::NORMAL_SOIL_ENERGY_LEVEL) / (sc::LETHAL_SOIL_ENERGY - sc::NORMAL_SOIL_ENERGY_LEVEL), 0.0f, 1.0f));
+      std::uint8_t organicMatterLevel = (std::uint8_t)(255.0f * std::min(soilOrganicMatter / sc::LETHAL_ORGANIC_MATTER, 1.0f));
+      appendRectangle(vertices, sf::Vector2f((float)x, (float)y), sf::Vector2f(1.f, 1.f), sf::Color(organicMatterLevel, soilEnergyLevel, 0));
+    }
+	}
 
   for (int x = relevantCells.position.x; x < relevantCells.position.x + relevantCells.size.x; ++x) {
     for (int y = relevantCells.position.y; y < relevantCells.position.y + relevantCells.size.y; ++y) {
       sf::Vector2i pos{x, y};
       CellType &type = getCluster(pos).lType[pos.x % 32];
-
-      {
-        float soilEnergy = getCluster(pos).lSoilEnergy[pos.x % 32];
-        float soilOrganicMatter = getCluster(pos).lSoilOrganicMatter[pos.x % 32];
-        std::uint8_t soilEnergyLevel = (std::uint8_t)(255.0f * std::clamp((soilEnergy - sc::NORMAL_SOIL_ENERGY_LEVEL) / (sc::LETHAL_SOIL_ENERGY - sc::NORMAL_SOIL_ENERGY_LEVEL), 0.0f, 1.0f));
-        std::uint8_t organicMatterLevel = (std::uint8_t)(255.0f * std::min(soilOrganicMatter / sc::LETHAL_ORGANIC_MATTER, 1.0f));
-        appendRectangle(vertices, sf::Vector2f((float)x, (float)y), sf::Vector2f(1.f, 1.f), sf::Color(organicMatterLevel, soilEnergyLevel, 0));
-      }
 
       if (!type) {
         continue;
@@ -800,7 +817,7 @@ void Block::render(sf::RenderTarget *target) {
       case BRANCH:
 				break;
       case SPROUT: {
-        float brightness = std::min(((float *)getCluster(pos).energy)[pos.x % 32] / (3 * sc::CELL_CREATE_COSTS[BRANCH]), 1.0f);
+        float brightness = 1.0f;//2.0f / (std::expf(getCluster(pos).lEnergy[pos.x%32]/sc::CELL_CREATE_COSTS[BRANCH])+1.0f)-1.0f;
         appendEllipse(vertices, sf::Vector2f(x, y), 0.5f, sf::Vector2f{1.f, 1.f}, 12, sf::Color(255, 255, 255, 255 * brightness));
         break;
       }
@@ -818,3 +835,4 @@ void Block::render(sf::RenderTarget *target) {
 
   target->draw(vertices);
 }
+#endif
