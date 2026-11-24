@@ -84,7 +84,12 @@ void interactiveSim() {
 
 void performanceTest() {
   AutomaticRerunSystem sim;
-  sim.go();
+  sf::Clock clock;
+  
+  while (true){
+    sim.step();
+    std::cout << clock.restart().asSeconds() << "\n";
+  }
 }
 
 int main() { interactiveSim(); }

@@ -3,7 +3,7 @@
 #include <SFML/System.hpp>
 
 namespace sc{
-	constexpr float MUTATION_RATE = 0.01f;
+	constexpr float MUTATION_RATE = 0.04f;
 	constexpr size_t GENOME_SIZE = 1 << 5;
 	constexpr uint32_t CELL_LIFETIME = 80;
 	constexpr float LEAF_TICK_ENERGY_GEN = 100.0f;

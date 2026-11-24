@@ -9,7 +9,7 @@ endif()
 project ("gridLife")
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS true)
-set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Release)
 
 set(CMAKE_CXX_FLAGS "-march=native -mtune=native")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

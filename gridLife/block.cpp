@@ -11,7 +11,6 @@
 
 Genome::Genome(Genome& g){
   ownerCount = +g.ownerCount;
-  genes.resize(g.genes.size());
   memcpy(genes.data(), g.genes.data(), genes.size()*sizeof(Gen));
 }
 
@@ -119,21 +118,23 @@ constexpr char bitmaskFromOffset(sf::Vector2i offset) {
       return sc::LEFTBIT;
     }
   }
-  throw std::runtime_error("No bitmask for that direction!");
+
+	assert(false);
 }
 
-bool mutateGenome(std::vector<Gen>::iterator first,
-                  std::vector<Gen>::iterator last, std::ranlux48 &engine) {
-  float P_PER_LEVEL = std::exp(std::log(sc::MUTATION_RATE) * std::log(2) /
-                               std::ceil(std::log(sc::GENOME_SIZE) - 1));
+bool mutateGenome(Gen* first, Gen* last, std::ranlux48 &engine) {
+  float P_PER_LEVEL = std::exp(std::log(sc::MUTATION_RATE) * std::log(2) / std::ceil(std::log(sc::GENOME_SIZE) - 1));
   std::bernoulli_distribution rDist(P_PER_LEVEL);
 
   if (std::distance(first, last) == 1) {
     if (rDist(engine)) {
       constexpr CellType POSSIBILITIES[5] = {NONE, LEAF, SPROUT, ROOT, ANTENNA};
-      std::uniform_int_distribution<unsigned char> dist(0, 4);
-      first->left = POSSIBILITIES[dist(engine)];
-      first->right = POSSIBILITIES[dist(engine)];
+      std::uniform_int_distribution<unsigned char> cellTypeDist(0, 4);
+      std::uniform_int_distribution<unsigned char> jumpDist(0, sc::GENOME_SIZE-1);
+      first->left = POSSIBILITIES[cellTypeDist(engine)];
+      first->right = POSSIBILITIES[cellTypeDist(engine)];
+      first->nextGenSuccess = jumpDist(engine);
+      first->nextGenFail = jumpDist(engine);
       return true;
     }
     return false;
@@ -159,17 +160,17 @@ sf::Vector2i wrapToBlockDim(sf::Vector2i vec){
   return vec;
 }
 
-Block::Block(AutomaticRerunSystem* rerunSys) : randomState(0), autoRerunSys(rerunSys) {
+Block::Block(AutomaticRerunSystem* rerunSys) : randomState(2), autoRerunSys(rerunSys) {
   memset(cells.data(), 0, cells.size() * sizeof(cells[0]));
   memset(cellNextGenGrid.data(), 0, cellNextGenGrid.size() * sizeof(cellNextGenGrid[0]));
   memset(cellGenomeIdxGrid.data(), 0, cellGenomeIdxGrid.size() * sizeof(cellGenomeIdxGrid[0]));
   
   Genome sampleGenome;
-  for (int i=0; i < sc::GENOME_SIZE; i+=4){
-    sampleGenome.genes.emplace_back(NONE, NONE);
-    sampleGenome.genes.emplace_back(LEAF, LEAF);
-    sampleGenome.genes.emplace_back(LEAF, LEAF);
-    sampleGenome.genes.emplace_back(SPROUT, SPROUT);
+  std::uniform_int_distribution<unsigned char> cellTypeDist(0, 4);
+  std::uniform_int_distribution<unsigned char> jumpDist(0, sc::GENOME_SIZE-1);
+  constexpr CellType POSSIBILITIES[5] = {NONE, LEAF, SPROUT, ROOT, ANTENNA};
+  for (int i=0; i < sc::GENOME_SIZE; ++i){
+    sampleGenome.genes[i] = Gen(POSSIBILITIES[cellTypeDist(randomState)], POSSIBILITIES[cellTypeDist(randomState)], jumpDist(randomState), jumpDist(randomState));
   }
   genomes.emplace_back(std::move(sampleGenome));
   CellCluster& cluster = getCluster(sc::BLOCK_DIM/2);
@@ -255,9 +256,6 @@ void Block::update32Cells(sf::Vector2i pos) {
 
     __m256 deathBySoilEnergy = _mm256_and_ps(_mm256_cmp_ps(cluster.soilEnergy[i],_mm256_set1_ps(sc::LETHAL_SOIL_ENERGY), _CMP_GT_OQ),_mm256_castsi256_ps(updateMasksLoop[i]));
     int movedMaskSE = _mm256_movemask_ps(deathBySoilEnergy);
-    
-    // TODO
-    //__m256i noEnergyTransfer = _mm256_and_si256(_mm256_cmpeq_epi32(cluster.energyDir, ZERO), updateMasksLoop[i]);
 
     int doomedMask = movedMaskTTL | movedMaskOM | movedMaskSE;
 
@@ -457,13 +455,9 @@ void Block::updateSprout(sf::Vector2i pos) {
   fCGen = &cellNextGenGrid[frontP.x + sc::BLOCK_DIM.x * frontP.y];
 
   CellType &cellForwardType = fClust->lType[frontP.x % 32];
-
-  if (cellForwardType == BRANCH) {
-    return;
-  }
 	
 	ADD_CHECK(cellGenomeIdxGrid[sproutInd] < genomes.size());
-  Gen &currentGen = genomes[cellGenomeIdxGrid[sproutInd]].genes[cellNextGenGrid[sproutInd]];
+  Gen currentGen = genomes[cellGenomeIdxGrid[sproutInd]].genes[cellNextGenGrid[sproutInd]];
 
   float genExecuteCost = sc::CELL_CREATE_COSTS[currentGen.left] + sc::CELL_CREATE_COSTS[currentGen.right] + sc::CELL_CREATE_COSTS[BRANCH];
 
@@ -472,11 +466,10 @@ void Block::updateSprout(sf::Vector2i pos) {
   CellType &cellRightType = rClust->lType[rightP.x % 32];
   CellType &cellLeftType = lClust->lType[leftP.x % 32];
 
-  if (currentCellEnergy < genExecuteCost ||
-      (cellRightType && (currentGen.right && currentGen.right != SPROUT)) ||
-      cellRightType == BRANCH ||
-      (cellLeftType && (currentGen.left && currentGen.left != SPROUT)) ||
-      cellLeftType == BRANCH) {
+  if (currentCellEnergy < genExecuteCost || cellForwardType == BRANCH ||
+      (cellRightType && (currentGen.right && currentGen.right != SPROUT)) || cellRightType == BRANCH ||
+      (cellLeftType && (currentGen.left && currentGen.left != SPROUT)) || cellLeftType == BRANCH) {
+    cellNextGenGrid[sproutInd] = currentGen.nextGenFail;
     return;
   }
 
@@ -499,7 +492,7 @@ void Block::updateSprout(sf::Vector2i pos) {
   fClust->lEnergy[frontP.x % 32] = currentCellEnergy - genExecuteCost;
   fClust->lnewEnergy[frontP.x % 32] = currentCellEnergy - genExecuteCost;
   fClust->lParent[frontP.x % 32] = parentBitmask;
-  size_t nextGenInd = (cellNextGenGrid[sproutInd] + 1) % genomes[cellGenomeIdxGrid[sproutInd]].genes.size();
+  size_t nextGenInd = currentGen.nextGenSuccess;
   *fCGen = nextGenInd;
   *fGenIdx = cellGenomeIdxGrid[sproutInd];
   fClust->lTimeToLive[frontP.x % 32] = sc::CELL_LIFETIME;
@@ -525,7 +518,7 @@ void Block::updateSprout(sf::Vector2i pos) {
 
       Genome nGen = genomes[cellGenomeIdxGrid[sproutInd]];
       nGen.ownerCount = 1;
-      if (mutateGenome(nGen.genes.begin(), nGen.genes.end(), randomState)) {
+      if (mutateGenome(nGen.genes.data(), nGen.genes.data() + nGen.genes.size(), randomState)) {
         genomes.emplace_back(std::move(nGen));
       } else {
         // TODO
@@ -550,7 +543,7 @@ void Block::updateSprout(sf::Vector2i pos) {
 
       Genome nGen = genomes[cellGenomeIdxGrid[sproutInd]];
       nGen.ownerCount = 1;
-      if (mutateGenome(nGen.genes.begin(), nGen.genes.end(), randomState)) {
+      if (mutateGenome(nGen.genes.data(), nGen.genes.data() + nGen.genes.size(), randomState)) {
         genomes.emplace_back(std::move(nGen));
       } else {
         // TODO

@@ -17,11 +17,13 @@ enum CellType : unsigned char { NONE, LEAF, BRANCH, SPROUT, ROOT, ANTENNA };
 struct Gen {
   CellType left;
   CellType right;
+  int nextGenSuccess;
+  int nextGenFail;
 };
 
 struct Genome {
   std::atomic_uint ownerCount = 1;
-  std::vector<Gen> genes;
+  std::array<Gen, sc::GENOME_SIZE> genes;
   
   Genome() = default;
   Genome(Genome&);
