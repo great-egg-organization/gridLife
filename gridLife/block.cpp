@@ -707,6 +707,29 @@ bool Block::verifyGridIntegrity() const {
   return true;
 }
 
+static void appendTriangle(sf::VertexArray &vertices, sf::Vector2f a, sf::Vector2f b, sf::Vector2f c, sf::Color color) {
+  vertices.append(sf::Vertex{a, color});
+  vertices.append(sf::Vertex{b, color});
+  vertices.append(sf::Vertex{c, color});
+}
+
+static void appendRectangle(sf::VertexArray &vertices, sf::Vector2f position, sf::Vector2f size, sf::Color color) {
+  appendTriangle(vertices, position, position + sf::Vector2f{size.x, 0.f}, position + size, color);
+  appendTriangle(vertices, position, position + size, position + sf::Vector2f{0.f, size.y}, color);
+}
+
+static void appendEllipse(sf::VertexArray &vertices, sf::Vector2f position, float radius, sf::Vector2f scale, int pointCount, sf::Color color) {
+  constexpr float PI = 3.141592654f;
+  sf::Vector2f center = position + sf::Vector2f{radius * scale.x, radius * scale.y};
+  for (int i = 0; i < pointCount; ++i) {
+    float angleA = i * 2 * PI / pointCount - PI / 2;
+    float angleB = (i + 1) * 2 * PI / pointCount - PI / 2;
+    sf::Vector2f a = center + sf::Vector2f{std::cos(angleA) * radius * scale.x, std::sin(angleA) * radius * scale.y};
+    sf::Vector2f b = center + sf::Vector2f{std::cos(angleB) * radius * scale.x, std::sin(angleB) * radius * scale.y};
+    appendTriangle(vertices, center, a, b, color);
+  }
+}
+
 CellCluster &Block::getCluster(sf::Vector2i pos) {
   pos = wrapToBlockDim(pos);
   assert(pos.x > -1 && pos.y > -1);
@@ -720,6 +743,7 @@ const CellCluster &Block::getCluster(sf::Vector2i pos) const {
 }
 
 void Block::render(sf::RenderTarget *target) {
+  sf::VertexArray vertices(sf::PrimitiveType::Triangles);
   sf::FloatRect viewRect = sf::FloatRect(target->getView().getCenter() - 0.5f * target->getView().getSize(), target->getView().getSize());
   sf::IntRect relevantCells;
   relevantCells.position = sf::Vector2i{std::max(0, (int)(viewRect.position.x - 1)), std::max(0, (int)(viewRect.position.y - 1))};
@@ -737,23 +761,19 @@ void Block::render(sf::RenderTarget *target) {
         continue;
       }
 
+      float intensity = getCluster(pos).lEnergy[pos.x%32] * 20.0f;
+      sf::Color branchColor(intensity, intensity, intensity);
+
       for (int i = 0; i < 4; ++i) {
         if (((char *)&getCluster(pos).energyDir)[pos.x % 32] & (1 << i)) {
           constexpr float CONNECTION_THICKNESS = 0.7f;
-          sf::VertexArray rect;
-          rect.setPrimitiveType(sf::PrimitiveType::Triangles);
-          rect.resize(3);
-          float intensity = getCluster(pos).lEnergy[pos.x%32] * 20.0f;
-          sf::Color branchColor(intensity, intensity, intensity);
-          rect[0].color = branchColor;
-          rect[1].color = branchColor;
-          rect[2].color = branchColor;
           sf::Vector2f ctp(x + 0.5f, y + 0.5f);
           sf::Vector2f off = (sf::Vector2f)offsetFromBitmask(1 << i);
-          rect[0].position = -0.5f * CONNECTION_THICKNESS * off.perpendicular() + ctp;
-          rect[1].position = off + ctp;
-          rect[2].position = 0.5f * CONNECTION_THICKNESS * off.perpendicular() + ctp;
-          target->draw(rect);
+          appendTriangle(vertices,
+            -0.5f * CONNECTION_THICKNESS * off.perpendicular() + ctp,
+            off + ctp,
+            0.5f * CONNECTION_THICKNESS * off.perpendicular() + ctp,
+            branchColor);
         }
       }
 
@@ -762,47 +782,29 @@ void Block::render(sf::RenderTarget *target) {
         break;
       case LEAF: {
         sf::Vector2f off = (sf::Vector2f)offsetFromBitmask(std::max<char>(((char *)&getCluster(pos).parent)[pos.x % 32], 1));
-        sf::CircleShape ellipse;
-        ellipse.setRadius(0.5f);
-        ellipse.setPosition(sf::Vector2f{(float)x, (float)y});
         sf::Vector2f tmp{std::abs(off.x) * 0.5f, std::abs(off.y) * 0.5f};
-        ellipse.move(sf::Vector2f{std::abs(tmp.perpendicular().x), std::abs(tmp.perpendicular().y)} * 0.5f);
-        ellipse.setScale(tmp + sf::Vector2f{0.5f, 0.5f});
-        ellipse.setFillColor(sf::Color::Green);
-        ellipse.setPointCount(12);
-        target->draw(ellipse);
+        sf::Vector2f leafPos = sf::Vector2f{(float)x, (float)y} + sf::Vector2f{std::abs(tmp.perpendicular().x), std::abs(tmp.perpendicular().y)} * 0.5f;
+        appendEllipse(vertices, leafPos, 0.5f, tmp + sf::Vector2f{0.5f, 0.5f}, 12, sf::Color::Green);
         break;
       }
       case BRANCH:
 				break;
       case SPROUT: {
-        sf::CircleShape circle;
-        circle.setRadius(0.5f);
-        circle.setPosition(sf::Vector2f{(float)x, (float)y});
         float brightness = std::min(((float *)getCluster(pos).energy)[pos.x % 32] / (3 * sc::CELL_CREATE_COSTS[BRANCH]), 1.0f);
-        circle.setFillColor(sf::Color(255, 255, 255, 255 * brightness));
-        circle.setPointCount(12);
-        target->draw(circle);
+        appendEllipse(vertices, sf::Vector2f(x, y), 0.5f, sf::Vector2f{1.f, 1.f}, 12, sf::Color(255, 255, 255, 255 * brightness));
         break;
       }
       case ROOT: {
-        sf::RectangleShape square;
-        square.setSize(sf::Vector2f(0.7f, 0.7f));
-        square.setPosition(sf::Vector2f((x + 0.15f), (y + 0.15f)));
-        square.setFillColor(sf::Color(0x8c, 0x5b, 0x32));
-        target->draw(square);
+        appendRectangle(vertices, sf::Vector2f((x + 0.15f), (y + 0.15f)), sf::Vector2f(0.7f, 0.7f), sf::Color(0x8c, 0x5b, 0x32));
         break;
       }
       case ANTENNA: {
-        sf::CircleShape circle;
-        circle.setRadius(0.35f);
-        circle.setPosition(sf::Vector2f(x, y));
-        circle.setFillColor(sf::Color::Blue);
-        circle.setPointCount(12);
-        target->draw(circle);
+        appendEllipse(vertices, sf::Vector2f(x, y), 0.35f, sf::Vector2f{1.f, 1.f}, 12, sf::Color::Blue);
         break;
       }
       }
     }
   }
+
+  target->draw(vertices);
 }

@@ -2,6 +2,7 @@
 
 #include "block.h"
 #include <functional>
+#include <memory>
 
 
 struct AutomaticRerunSystem{
