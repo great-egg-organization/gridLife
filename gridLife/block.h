@@ -110,8 +110,8 @@ private:
 
   void do32CellEnergyTransfers(sf::Vector2i first, __m256i updateMask);
 
-  void update32Leafs(sf::Vector2i first, __m256i leafMask);
   void updateSprout(sf::Vector2i pos);
+  void update32Leafs(sf::Vector2i first, __m256i leafMask);
   void update32Roots(sf::Vector2i first, __m256i rootMask);
   void update32Antennas(sf::Vector2i first, __m256i antennaMask);
   

@@ -1,23 +1,9 @@
 #include "automaticRerunSystem.h"
+#include <iostream>
 
 #ifdef INTERACTIVE_SIM
-#include <iostream>
-#include <GL/glew.h>
-#include <GL/glut.h>
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
-
-void initApp() {
-  sf::Window fakeWin;
-  fakeWin.create(sf::VideoMode(sf::Vector2u(100, 100), 32), "FAKE");
-
-  GLenum err = glewInit();
-  if (err != GLEW_OK) {
-    std::cout << glewGetErrorString(err) << "\n";
-  }
-
-  fakeWin.close();
-}
 
 void doWindowEvents(sf::RenderWindow &win, sf::Vector2i &lastMousePos) {
   std::optional<sf::Event> event = win.pollEvent();
@@ -85,8 +71,6 @@ int main() { interactiveSim(); }
 #else
 void performanceTest() {
   AutomaticRerunSystem sim;
-  sf::Clock clock;
-  
   sim.go();
 }
 

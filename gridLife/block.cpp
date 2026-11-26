@@ -167,18 +167,27 @@ Block::Block(AutomaticRerunSystem* rerunSys) : randomState(2), autoRerunSys(reru
   memset(cellNextGenGrid.data(), 0, cellNextGenGrid.size() * sizeof(cellNextGenGrid[0]));
   memset(cellGenomeIdxGrid.data(), 0, cellGenomeIdxGrid.size() * sizeof(cellGenomeIdxGrid[0]));
   
-  Genome sampleGenome;
-  std::uniform_int_distribution<unsigned char> cellTypeDist(0, 4);
-  std::uniform_int_distribution<unsigned char> jumpDist(0, sc::GENOME_SIZE-1);
-  constexpr CellType POSSIBILITIES[5] = {NONE, LEAF, SPROUT, ROOT, ANTENNA};
-  for (int i=0; i < sc::GENOME_SIZE; ++i){
-    sampleGenome.genes[i] = Gen(POSSIBILITIES[cellTypeDist(randomState)], POSSIBILITIES[cellTypeDist(randomState)], jumpDist(randomState), jumpDist(randomState));
+  int ind = 0;
+  for (int x=4; x < sc::BLOCK_DIM.x; x+=8){
+    for (int y=4; y < sc::BLOCK_DIM.y; y+=8){
+      Genome sampleGenome;
+  		std::uniform_int_distribution<unsigned char> cellTypeDist(0, 4);
+  		std::uniform_int_distribution<unsigned char> jumpDist(0, sc::GENOME_SIZE-1);
+  		constexpr CellType POSSIBILITIES[5] = {NONE, LEAF, SPROUT, ROOT, ANTENNA};
+  		for (int i=0; i < sc::GENOME_SIZE; ++i){
+    		sampleGenome.genes[i] = Gen(POSSIBILITIES[cellTypeDist(randomState)], POSSIBILITIES[cellTypeDist(randomState)], jumpDist(randomState), jumpDist(randomState));
+  		}
+  		genomes.emplace_back(std::move(sampleGenome));
+     
+      sf::Vector2i pos{x,y};
+      cellGenomeIdxGrid[x + sc::BLOCK_DIM.x*y] = ind;
+      ++ind;
+      CellCluster& cluster = getCluster(pos);
+  		cluster.lType[pos.x%32] = SPROUT;
+  		cluster.lEnergy[pos.x%32] = 5000.0f;
+  		cluster.lTimeToLive[pos.x%32] = sc::CELL_LIFETIME;
+    }
   }
-  genomes.emplace_back(std::move(sampleGenome));
-  CellCluster& cluster = getCluster(sc::BLOCK_DIM/2);
-  cluster.lType[(sc::BLOCK_DIM.x/2)%32] = SPROUT;
-  cluster.lEnergy[(sc::BLOCK_DIM.x/2)%32] = 999.0f;
-  cluster.lTimeToLive[(sc::BLOCK_DIM.x/2)%32] = 200;
 }
 
 #ifdef NDEBUG
@@ -424,20 +433,6 @@ void Block::do32CellEnergyTransfers(sf::Vector2i pos, __m256i updateMask) {
   }
 }
 
-void Block::update32Leafs(sf::Vector2i pos, __m256i leafMask) {
-  __m256 leafEnergyGen = _mm256_set1_ps(sc::LEAF_TICK_ENERGY_GEN);
-
-  __m256i expandedMasks[4];
-  expand_32_bytes_signed(leafMask, expandedMasks[0], expandedMasks[1], expandedMasks[2], expandedMasks[3]);
-
-  CellCluster &cells = getCluster(pos);
-
-  for (int i = 0; i < 4; ++i) {
-    __m256 leafEnergyGenMasked = _mm256_blendv_ps(_mm256_setzero_ps(), leafEnergyGen, _mm256_castsi256_ps(expandedMasks[i]));
-    cells.energy[i] = _mm256_add_ps(cells.energy[i], leafEnergyGenMasked);
-  }
-}
-
 void Block::updateSprout(sf::Vector2i pos) {
   ADD_CHECK([&](){return verifyGridIntegrity();});
   
@@ -575,6 +570,20 @@ void Block::updateSprout(sf::Vector2i pos) {
   }
 }
 
+void Block::update32Leafs(sf::Vector2i pos, __m256i leafMask) {
+  __m256 leafEnergyGen = _mm256_set1_ps(sc::LEAF_TICK_ENERGY_GEN);
+
+  __m256i expandedMasks[4];
+  expand_32_bytes_signed(leafMask, expandedMasks[0], expandedMasks[1], expandedMasks[2], expandedMasks[3]);
+
+  CellCluster &cells = getCluster(pos);
+
+  for (int i = 0; i < 4; ++i) {
+    __m256 leafEnergyGenMasked = _mm256_blendv_ps(_mm256_setzero_ps(), leafEnergyGen, _mm256_castsi256_ps(expandedMasks[i]));
+    cells.newEnergy[i] = _mm256_add_ps(cells.newEnergy[i], leafEnergyGenMasked);
+  }
+}
+
 void Block::update32Roots(sf::Vector2i pos, __m256i rootMask) {
   CellCluster &cluster = getCluster(pos);
 
@@ -591,7 +600,7 @@ void Block::update32Roots(sf::Vector2i pos, __m256i rootMask) {
 
     cluster.soilOrganicMatter[i] = _mm256_sub_ps(cluster.soilOrganicMatter[i], depletionAmount);
 
-    cluster.energy[i] = _mm256_add_ps(cluster.energy[i], _mm256_mul_ps(efficiency, depletionAmount));
+    cluster.newEnergy[i] = _mm256_add_ps(cluster.newEnergy[i], _mm256_mul_ps(efficiency, depletionAmount));
   }
 }
 
@@ -611,7 +620,7 @@ void Block::update32Antennas(sf::Vector2i pos, __m256i antennaMask) {
 
     cluster.soilEnergy[i] = _mm256_sub_ps(cluster.soilEnergy[i], depletionAmount);
 
-    cluster.energy[i] = _mm256_add_ps(cluster.energy[i], _mm256_mul_ps(efficiency, depletionAmount));
+    cluster.newEnergy[i] = _mm256_add_ps(cluster.newEnergy[i], _mm256_mul_ps(efficiency, depletionAmount));
   }
 }
 
@@ -822,7 +831,7 @@ void Block::render(sf::RenderTarget *target) {
       case BRANCH:
 				break;
       case SPROUT: {
-        float brightness = getCluster(pos).lEnergy[pos.x%32]*0.001f/sc::CELL_CREATE_COSTS[BRANCH];
+        float brightness = getCluster(pos).lEnergy[pos.x%32]*0.33f/sc::CELL_CREATE_COSTS[BRANCH];
         appendEllipse(vertices, sf::Vector2f(x, y), 0.5f, sf::Vector2f{1.f, 1.f}, 12, sf::Color(255, 255, 255, 255 * brightness));
         break;
       }
