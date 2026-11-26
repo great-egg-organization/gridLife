@@ -8,6 +8,7 @@
 #include <math.h>
 #include <memory.h>
 #include <random>
+#include <stack>
 
 
 Genome::Genome(Genome& g){
@@ -125,32 +126,72 @@ constexpr char bitmaskFromOffset(sf::Vector2i offset) {
 }
 
 bool mutateGenome(Gen* first, Gen* last, std::ranlux48 &engine) {
-  float P_PER_LEVEL = std::exp(std::log(sc::MUTATION_RATE) * std::log(2) / std::ceil(std::log(sc::GENOME_SIZE) - 1));
-  std::bernoulli_distribution rDist(P_PER_LEVEL);
-
-  if (std::distance(first, last) == 1) {
-    if (rDist(engine)) {
-      constexpr CellType POSSIBILITIES[5] = {NONE, LEAF, SPROUT, ROOT, ANTENNA};
-      std::uniform_int_distribution<unsigned char> cellTypeDist(0, 4);
-      std::uniform_int_distribution<unsigned char> jumpDist(0, sc::GENOME_SIZE-1);
-      first->left = POSSIBILITIES[cellTypeDist(engine)];
-      first->right = POSSIBILITIES[cellTypeDist(engine)];
-      first->nextGenSuccess = jumpDist(engine);
-      first->nextGenFail = jumpDist(engine);
-      return true;
+  assert(__builtin_popcount(last - first) < 2);
+  
+  constexpr int MASK = (1 << sc::MUTATION_RATE_PER_LEVEL_DENOMINATOR_LENGTH) - 1;
+  
+  bool anyMutation = false;
+  int bitsLeft = 0;
+  size_t randomBitstring;
+  ptrdiff_t currentJumpDist = (last - first) / 2;
+  Gen* currentLeftBound = first;
+  std::stack<char> pseudoCallstack;
+  pseudoCallstack.push(false);
+  pseudoCallstack.push(false);
+  while (currentLeftBound < last){
+    if (currentJumpDist == 1){
+      constexpr std::array possibilities = { NONE, LEAF, BRANCH, SPROUT, ANTENNA };
+      std::uniform_int_distribution<int> cellTypeDist(0, possibilities.size() - 1);
+      std::uniform_int_distribution<int> jumpDist(0, sc::GENOME_SIZE-1);
+      currentLeftBound->left = possibilities[cellTypeDist(engine)];
+      currentLeftBound->right = possibilities[cellTypeDist(engine)];
+      currentLeftBound->nextGenSuccess = jumpDist(engine);
+      currentLeftBound->nextGenFail = jumpDist(engine);
+      
+      anyMutation = true;
+      ++currentLeftBound;
+      currentJumpDist = 2;
+      
+      while (pseudoCallstack.top()){
+		    currentJumpDist *= 2;
+		    pseudoCallstack.pop();
+		  }
+		  if (pseudoCallstack.empty()){
+		    assert(currentLeftBound == last);
+		    break;
+		  }
+		  pseudoCallstack.pop();
+		  pseudoCallstack.push(true);
+		  
+      continue;
     }
-    return false;
+    
+    bitsLeft -= sc::MUTATION_RATE_PER_LEVEL_DENOMINATOR_LENGTH;
+    randomBitstring = randomBitstring >> sc::MUTATION_RATE_PER_LEVEL_DENOMINATOR_LENGTH;
+    if (bitsLeft < sc::MUTATION_RATE_PER_LEVEL_DENOMINATOR_LENGTH){
+      randomBitstring = engine();
+    }
+    
+		if ((randomBitstring & MASK) < sc::MUTATION_RATE_PER_LEVEL_NUMERATOR){
+		  currentJumpDist /= 2;
+		  pseudoCallstack.push(false);
+		}
+		else {
+		  currentLeftBound += currentJumpDist;
+		  while (pseudoCallstack.top()){
+		    currentJumpDist *= 2;
+		    pseudoCallstack.pop();
+		  }
+		  if (pseudoCallstack.empty()){
+		    assert(currentLeftBound == last);
+		    break;
+		  }
+		  pseudoCallstack.pop();
+		  pseudoCallstack.push(true);
+		}
   }
-
-  bool ret = false;
-  if (rDist(engine)) {
-    ret = mutateGenome(first + std::distance(first, last) / 2, last, engine);
-  }
-  if (rDist(engine)) {
-    ret = ret || mutateGenome(first, last - std::distance(first, last) / 2, engine);
-  }
-
-  return ret;
+  
+  return anyMutation;
 }
 
 sf::Vector2i wrapToBlockDim(sf::Vector2i vec){
@@ -202,9 +243,8 @@ void Block::step() {
   __m256i ZERO = _mm256_setzero_si256();
   for (size_t i = 0; i < elementCount; ++i) {
     cells[i].updated = ZERO;
-    for (int j=0; j < 4; ++j){
-      cells[i].newEnergy[j] = cells[i].energy[j];
-    }
+    
+    // we could copy energy to newEnergy here, but it wouldn't do anything
   }
   
   for (int y = 0; y < sc::BLOCK_DIM.y; ++y) {

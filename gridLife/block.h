@@ -77,7 +77,7 @@ struct CellCluster {
 constexpr sf::Vector2i offsetFromBitmask(char bitmask);
 constexpr char oppositeDirectionBitmask(char bitmask);
 constexpr char bitmaskFromOffset(sf::Vector2i offset);
-bool mutateGenome(std::vector<Gen>::iterator first, std::vector<Gen>::iterator last, std::ranlux48 &);
+bool mutateGenome(Gen* first, Gen* last, std::ranlux48 &);
 sf::Vector2i wrapToBlockDim(sf::Vector2i);
 
 struct AutomaticRerunSystem;

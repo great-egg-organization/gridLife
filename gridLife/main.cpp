@@ -1,5 +1,10 @@
 #include "automaticRerunSystem.h"
+#include "block.h"
+#include "simConstants.h"
+#include <cstring>
 #include <iostream>
+#include <random>
+#include <vector>
 
 #ifdef INTERACTIVE_SIM
 #include <SFML/Graphics.hpp>
