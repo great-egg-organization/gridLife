@@ -238,7 +238,7 @@ Block::Block(AutomaticRerunSystem* rerunSys) : randomState(4), autoRerunSys(reru
         int distX = x + i - sc::BLOCK_DIM.x/2;
         int distY = y - sc::BLOCK_DIM.y/2;
         float dist = std::sqrtf(distX*distX + distY*distY);
-        cluster.lSoilOrganicMatter[i] = std::max(sc::LETHAL_SOIL_ENERGY - 6*dist, 0.0f);
+        cluster.lSoilOrganicMatter[i] = std::max(sc::LETHAL_SOIL_ENERGY - 7*dist, 100.0f);
       }
     }
   }
