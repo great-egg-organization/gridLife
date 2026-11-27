@@ -532,14 +532,15 @@ void Block::updateSprout(sf::Vector2i pos) {
 	ADD_CHECK(cellGenomeIdxGrid[sproutInd] < genomes.size());
   Gen currentGen = genomes[cellGenomeIdxGrid[sproutInd]].genes[cellNextGenGrid[sproutInd]];
 
-  float genExecuteCost = sc::CELL_CREATE_COSTS[currentGen.left] + sc::CELL_CREATE_COSTS[currentGen.right] + sc::CELL_CREATE_COSTS[BRANCH];
-
   float &currentCellEnergy = cluster.lEnergy[pos.x%32];
+
+  float energyExpended = currentCellEnergy * sc::SPROUT_ENERGY_EXPENDITURE_FRACTION;
+  uint32_t producedCellLifetime = sc::CELL_LIFETIME + (uint32_t)(sc::SPROUT_LIFETIME_PER_ENERGY_EXPENDED * energyExpended);
 
   CellType &cellRightType = rClust->lType[rightP.x % 32];
   CellType &cellLeftType = lClust->lType[leftP.x % 32];
 
-  if (currentCellEnergy < genExecuteCost || cellForwardType == BRANCH ||
+  if (cellForwardType == BRANCH ||
       (cellRightType && (currentGen.right && currentGen.right != SPROUT)) || cellRightType == BRANCH ||
       (cellLeftType && (currentGen.left && currentGen.left != SPROUT)) || cellLeftType == BRANCH) {
     cellNextGenGrid[sproutInd] = currentGen.nextGenFail;
@@ -562,13 +563,13 @@ void Block::updateSprout(sf::Vector2i pos) {
     ADD_CHECK([&](){return verifyGridIntegrity();});
   }
 
-  fClust->lEnergy[frontP.x % 32] = currentCellEnergy - genExecuteCost;
-  fClust->lnewEnergy[frontP.x % 32] = currentCellEnergy - genExecuteCost;
+  fClust->lEnergy[frontP.x % 32] = currentCellEnergy - energyExpended;
+  fClust->lnewEnergy[frontP.x % 32] = currentCellEnergy - energyExpended;
   fClust->lParent[frontP.x % 32] = parentBitmask;
   size_t nextGenInd = currentGen.nextGenSuccess;
   *fCGen = nextGenInd;
   *fGenIdx = cellGenomeIdxGrid[sproutInd];
-  fClust->lTimeToLive[frontP.x % 32] = sc::CELL_LIFETIME;
+  fClust->lTimeToLive[frontP.x % 32] = producedCellLifetime;
   cellForwardType = SPROUT;
   fClust->lUpdated[frontP.x % 32] = sc::UPDATED_FLAG;
 
@@ -582,7 +583,7 @@ void Block::updateSprout(sf::Vector2i pos) {
     rClust->lEnergy[rightP.x % 32] = sc::CELL_INITIAL_ENERGY;
     rClust->lnewEnergy[rightP.x % 32] = sc::CELL_INITIAL_ENERGY;
     rClust->lParent[rightP.x % 32] = bitmaskFromOffset(-rightD);
-    rClust->lTimeToLive[rightP.x % 32] = sc::CELL_LIFETIME;
+    rClust->lTimeToLive[rightP.x % 32] = producedCellLifetime;
     rClust->lUpdated[rightP.x % 32] = sc::UPDATED_FLAG;
     if (currentGen.right == SPROUT) {
       cluster.lEnergyDir[pos.x % 32] |= bitmaskFromOffset(rightD);
@@ -607,7 +608,7 @@ void Block::updateSprout(sf::Vector2i pos) {
     lClust->lEnergy[leftP.x % 32] = sc::CELL_INITIAL_ENERGY;
     lClust->lnewEnergy[leftP.x % 32] = sc::CELL_INITIAL_ENERGY;
     lClust->lParent[leftP.x % 32] = bitmaskFromOffset(rightD);
-    lClust->lTimeToLive[leftP.x % 32] = sc::CELL_LIFETIME;
+    lClust->lTimeToLive[leftP.x % 32] = producedCellLifetime;
     lClust->lUpdated[leftP.x % 32] = sc::UPDATED_FLAG;
     if (currentGen.left == SPROUT) {
       cluster.lEnergyDir[pos.x % 32] |= bitmaskFromOffset(-rightD);
