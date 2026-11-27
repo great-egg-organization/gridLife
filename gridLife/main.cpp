@@ -66,8 +66,10 @@ void interactiveSim() {
     win.clear();
     simulation.simulator->render(&win);
     win.display();
-
-    simulation.step();
+		
+		for (int i=0; i < 100; ++i){
+		  simulation.step();
+		}
   }
 }
 

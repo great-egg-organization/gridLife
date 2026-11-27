@@ -12,12 +12,12 @@ namespace sc{
 	constexpr uint32_t CELL_LIFETIME = 80;
 	constexpr float CELL_TICK_ENERGY_CONSUMPTION = 0.0f;
 	constexpr float CELL_TICK_ENERGY_DECAY_FACTOR = 1.0f;
-	constexpr float LEAF_TICK_BASE_ENERGY_GEN = 0.0f; // interpolation based on organic matter, max at lethal
+	constexpr float LEAF_TICK_BASE_ENERGY_GEN = 2.0f; // interpolation based on organic matter, max at lethal
 	constexpr float LEAF_TICK_MAX_ENERGY_GEN = 20.0f;
 	constexpr float ROOT_SOIL_TICK_DEPLETION_FRACTION = 0.05f;
-	constexpr float ROOT_EFFICIENCY = 1.0f;
+	constexpr float ROOT_EFFICIENCY = 1.2f;
 	constexpr float ANTENNA_SOIL_TICK_DEPLETION_FRACTION = 0.05f;
-	constexpr float ANTENNA_EFFICIENCY = 1.0f;
+	constexpr float ANTENNA_EFFICIENCY = 1.2f;
 	constexpr float CELL_CREATE_COSTS[6] = {0, 500, 80, 80, 700, 300}; // NONE, LEAF, BRANCH, SPROUT, ROOT, ANTENNA
 	constexpr float CELL_INITIAL_ENERGY = 10;
 	constexpr float LETHAL_ORGANIC_MATTER = 1200;
