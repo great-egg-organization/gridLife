@@ -25,7 +25,8 @@ namespace sc{
 	constexpr float LETHAL_SOIL_ENERGY = 1200;
 	constexpr float CELL_DEATH_BASE_ENERGY = 60;
 	constexpr float CELL_DEATH_ORGANIC_MATTER = 60;
-	constexpr float CELL_DEATH_ENERGY_INTO_SOIL_FRACTION = 0.9f;
+	constexpr float CELL_DEATH_ENERGY_INTO_SOIL_ENERGY_FRACTION = 0.9f;
+	constexpr float CELL_DEATH_ENERGY_INTO_ORGANIC_MATTER_FRACTION = 0.1f;
 	constexpr float SOIL_ENERGY_TICK_CHANGE_AMOUNT = 1.0f;
 	constexpr float SOIL_ENERGY_TICK_DECAY_FACTOR = 0.99f;
 	

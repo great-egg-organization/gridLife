@@ -699,8 +699,8 @@ void Block::kill(sf::Vector2i pos) {
   char persistentParent = ((char *)&getCluster(pos).parent)[pos.x % 32];
   getCluster(pos).lEnergyDir[pos.x % 32] = 0;
   getCluster(pos).lParent[pos.x % 32] = 0;
-  getCluster(pos).lSoilEnergy[pos.x % 32] += sc::CELL_DEATH_BASE_ENERGY + sc::CELL_DEATH_ENERGY_INTO_SOIL_FRACTION * getCluster(pos).lEnergy[pos.x%32];
-  getCluster(pos).lSoilOrganicMatter[pos.x % 32] += sc::CELL_DEATH_ORGANIC_MATTER;
+  getCluster(pos).lSoilEnergy[pos.x % 32] += sc::CELL_DEATH_BASE_ENERGY + sc::CELL_DEATH_ENERGY_INTO_SOIL_ENERGY_FRACTION * getCluster(pos).lEnergy[pos.x%32];
+  getCluster(pos).lSoilOrganicMatter[pos.x % 32] += sc::CELL_DEATH_ORGANIC_MATTER + sc::CELL_DEATH_ENERGY_INTO_ORGANIC_MATTER_FRACTION * getCluster(pos).lEnergy[pos.x%32];
 
 	if (persistentSelfType == SPROUT || persistentSelfType == ROOT){
 	  constexpr sf::Vector2i surroundOffs[9] = {{-1, 1},  {0, 1},  {1, 1}, {-1, 0},  {0, 0},  {1, 0}, {-1, -1}, {0, -1}, {1, -1}};
