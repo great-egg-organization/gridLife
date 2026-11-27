@@ -1,10 +1,10 @@
-cmake_minimum_required (VERSION 4.4 FATAL_ERROR)
+cmake_minimum_required (VERSION 3.16 FATAL_ERROR)
 
 project ("gridLife")
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 
-set(CACHE{interactive_sim} TYPE BOOL VALUE false)
+option(interactive_sim "Build with gui" OFF)
 
 if (interactive_sim)
 	message("Building with gui!")
