@@ -19,6 +19,8 @@ namespace sc{
 	constexpr float ROOT_EFFICIENCY = 1.2f;
 	constexpr float ANTENNA_SOIL_TICK_DEPLETION_FRACTION = 0.05f;
 	constexpr float ANTENNA_EFFICIENCY = 1.2f;
+	constexpr float SPROUT_ENERGY_EXPENDITURE_FRACTION = 0.5f; // fraction of the sprout's available energy consumed to execute its genome
+	constexpr float LIFETIME_PER_ENERGY_EXPENDED[6] = {0, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f}; // NONE, LEAF, BRANCH, SPROUT, ROOT, ANTENNA
 	constexpr float CELL_CREATE_COSTS[6] = {0, 500, 80, 80, 500, 300}; // NONE, LEAF, BRANCH, SPROUT, ROOT, ANTENNA
 	constexpr float CELL_INITIAL_ENERGY = 10;
 	constexpr float LETHAL_ORGANIC_MATTER = 1200;
