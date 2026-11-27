@@ -203,7 +203,7 @@ sf::Vector2i wrapToBlockDim(sf::Vector2i vec){
   return vec;
 }
 
-Block::Block(AutomaticRerunSystem* rerunSys) : randomState(2), autoRerunSys(rerunSys) {
+Block::Block(AutomaticRerunSystem* rerunSys) : randomState(4), autoRerunSys(rerunSys) {
   memset(cells.data(), 0, cells.size() * sizeof(cells[0]));
   memset(cellNextGenGrid.data(), 0, cellNextGenGrid.size() * sizeof(cellNextGenGrid[0]));
   memset(cellGenomeIdxGrid.data(), 0, cellGenomeIdxGrid.size() * sizeof(cellGenomeIdxGrid[0]));
@@ -702,30 +702,32 @@ void Block::kill(sf::Vector2i pos) {
   getCluster(pos).lSoilEnergy[pos.x % 32] += sc::CELL_DEATH_BASE_ENERGY + sc::CELL_DEATH_ENERGY_INTO_SOIL_FRACTION * getCluster(pos).lEnergy[pos.x%32];
   getCluster(pos).lSoilOrganicMatter[pos.x % 32] += sc::CELL_DEATH_ORGANIC_MATTER;
 
-  constexpr sf::Vector2i surroundOffs[9] = {{-1, 1},  {0, 1},  {1, 1}, {-1, 0},  {0, 0},  {1, 0}, {-1, -1}, {0, -1}, {1, -1}};
-  float sum = 0;
-  for (const sf::Vector2i &o : surroundOffs) {
-    sf::Vector2i _pos = wrapToBlockDim(pos + o);
-    sum += getCluster(_pos).lSoilOrganicMatter[_pos.x % 32];
-  }
-  float avg = sum / 9;
-  for (const sf::Vector2i &o : surroundOffs) {
-    sf::Vector2i _pos = pos + o;
-    getCluster(_pos).lSoilOrganicMatter[_pos.x % 32] = avg;
-  }
+	if (persistentSelfType == SPROUT || persistentSelfType == ROOT){
+	  constexpr sf::Vector2i surroundOffs[9] = {{-1, 1},  {0, 1},  {1, 1}, {-1, 0},  {0, 0},  {1, 0}, {-1, -1}, {0, -1}, {1, -1}};
+  	float sum = 0;
+  	for (const sf::Vector2i &o : surroundOffs) {
+    	sf::Vector2i _pos = wrapToBlockDim(pos + o);
+    	sum += getCluster(_pos).lSoilOrganicMatter[_pos.x % 32];
+  	}
+  	float avg = sum / 9;
+  	for (const sf::Vector2i &o : surroundOffs) {
+    	sf::Vector2i _pos = pos + o;
+    	getCluster(_pos).lSoilOrganicMatter[_pos.x % 32] = avg;
+  	}
+	}
   
   if (persistentSelfType == SPROUT && persistentParent){
     redirectEnergyToParent(pos, persistentParent);
   }
   
   // possibly redundant
-  constexpr sf::Vector2i adjacentOffs[4] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+  /*constexpr sf::Vector2i adjacentOffs[4] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
   for (const sf::Vector2i &o : adjacentOffs){
     sf::Vector2i _pos = wrapToBlockDim(pos + o);
     CellCluster& clust = getCluster(_pos);
     clust.lEnergyDir[_pos.x%32] &= ~bitmaskFromOffset(-o);
     clust.lParent[_pos.x%32] &= ~bitmaskFromOffset(-o);
-  }
+  }*/
 }
 
 void Block::redirectEnergyToParent(sf::Vector2i pos, char parent){
