@@ -18,7 +18,7 @@ namespace sc{
 	constexpr float ROOT_EFFICIENCY = 1.0f;
 	constexpr float ANTENNA_SOIL_TICK_DEPLETION_FRACTION = 0.05f;
 	constexpr float ANTENNA_EFFICIENCY = 1.0f;
-	constexpr float CELL_CREATE_COSTS[6] = {0, 500, 80, 80, 700, 500}; // NONE, LEAF, BRANCH, SPROUT, ROOT, ANTENNA
+	constexpr float CELL_CREATE_COSTS[6] = {0, 500, 80, 80, 700, 300}; // NONE, LEAF, BRANCH, SPROUT, ROOT, ANTENNA
 	constexpr float CELL_INITIAL_ENERGY = 10;
 	constexpr float LETHAL_ORGANIC_MATTER = 1200;
 	constexpr float NORMAL_SOIL_ENERGY_LEVEL = 800;
@@ -26,8 +26,8 @@ namespace sc{
 	constexpr float CELL_DEATH_BASE_ENERGY = 60;
 	constexpr float CELL_DEATH_ORGANIC_MATTER = 60;
 	constexpr float CELL_DEATH_ENERGY_INTO_SOIL_FRACTION = 0.9f;
-	constexpr float SOIL_ENERGY_TICK_CHANGE_AMOUNT = 4.0;
-	constexpr float SOIL_ENERGY_TICK_DECAY_FACTOR = 0.98f;
+	constexpr float SOIL_ENERGY_TICK_CHANGE_AMOUNT = 1.0f;
+	constexpr float SOIL_ENERGY_TICK_DECAY_FACTOR = 0.99f;
 	
 	enum Direction : char {
 		ABOVEBIT = 1,
