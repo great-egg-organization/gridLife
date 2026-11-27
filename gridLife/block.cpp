@@ -225,8 +225,20 @@ Block::Block(AutomaticRerunSystem* rerunSys) : randomState(2), autoRerunSys(reru
       ++ind;
       CellCluster& cluster = getCluster(pos);
   		cluster.lType[pos.x%32] = SPROUT;
-  		cluster.lEnergy[pos.x%32] = 5000.0f;
+  		cluster.lEnergy[pos.x%32] = 9000.0f;
   		cluster.lTimeToLive[pos.x%32] = sc::CELL_LIFETIME;
+    }
+  }
+  
+  for (int x=0; x < sc::BLOCK_DIM.x; x += 32){
+    for (int y=0; y < sc::BLOCK_DIM.y; ++y){
+      CellCluster& cluster = getCluster({x,y});
+      for (int i=0; i < 32; ++i){
+        int distX = x + i - sc::BLOCK_DIM.x/2;
+        int distY = y - sc::BLOCK_DIM.y/2;
+        float dist = std::sqrtf(distX*distX + distY*distY);
+        cluster.lSoilOrganicMatter[i] = std::max(sc::LETHAL_SOIL_ENERGY - 10*dist, 0.0f);
+      }
     }
   }
 }
@@ -356,13 +368,19 @@ void Block::update32Cells(sf::Vector2i pos) {
   __m256i rootMask = _mm256_and_si256(_mm256_cmpeq_epi8(cluster.type, _mm256_set1_epi8(ROOT)), toUpdate);
   __m256i antennaMask = _mm256_and_si256(_mm256_cmpeq_epi8(cluster.type, _mm256_set1_epi8(ANTENNA)), toUpdate);
 
-  update32Leafs(pos, leafMask);
-  ADD_CHECK([this](){return verifyGridIntegrity();});
-  update32Roots(pos, rootMask);
-  ADD_CHECK([this](){return verifyGridIntegrity();});
-  update32Antennas(pos, antennaMask);
-  ADD_CHECK([this](){return verifyGridIntegrity();});
-
+	if (!_mm256_testz_si256(leafMask, leafMask)){
+  	update32Leafs(pos, leafMask);
+  	ADD_CHECK([this](){return verifyGridIntegrity();});
+	}
+	if (!_mm256_testz_si256(rootMask, rootMask)){
+	  update32Roots(pos, rootMask);
+  	ADD_CHECK([this](){return verifyGridIntegrity();});
+	}
+	if (!_mm256_testz_si256(antennaMask, antennaMask)){
+		update32Antennas(pos, antennaMask);
+  	ADD_CHECK([this](){return verifyGridIntegrity();});
+	}
+  
   do32CellEnergyTransfers(pos, _mm256_andnot_si256(sproutMask, toUpdate));
   ADD_CHECK([this](){return verifyGridIntegrity();});
 
@@ -611,7 +629,8 @@ void Block::updateSprout(sf::Vector2i pos) {
 }
 
 void Block::update32Leafs(sf::Vector2i pos, __m256i leafMask) {
-  __m256 leafEnergyGen = _mm256_set1_ps(sc::LEAF_TICK_ENERGY_GEN);
+  __m256 leafEnergyGenA = _mm256_set1_ps(sc::LEAF_TICK_BASE_ENERGY_GEN);
+  __m256 leafEnergyGenInc = _mm256_set1_ps((sc::LEAF_TICK_MAX_ENERGY_GEN - sc::LEAF_TICK_BASE_ENERGY_GEN)/sc::LETHAL_ORGANIC_MATTER);
 
   __m256i expandedMasks[4];
   expand_32_bytes_signed(leafMask, expandedMasks[0], expandedMasks[1], expandedMasks[2], expandedMasks[3]);
@@ -619,6 +638,7 @@ void Block::update32Leafs(sf::Vector2i pos, __m256i leafMask) {
   CellCluster &cells = getCluster(pos);
 
   for (int i = 0; i < 4; ++i) {
+    __m256 leafEnergyGen = _mm256_add_ps(leafEnergyGenA, _mm256_mul_ps(leafEnergyGenInc, cells.soilOrganicMatter[i]));
     __m256 leafEnergyGenMasked = _mm256_blendv_ps(_mm256_setzero_ps(), leafEnergyGen, _mm256_castsi256_ps(expandedMasks[i]));
     cells.newEnergy[i] = _mm256_add_ps(cells.newEnergy[i], leafEnergyGenMasked);
   }
