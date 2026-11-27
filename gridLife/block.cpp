@@ -2,6 +2,7 @@
 #include "simConstants.h"
 #include "automaticRerunSystem.h"
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <cstring>
 #include <immintrin.h>

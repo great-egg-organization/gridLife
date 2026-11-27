@@ -1,6 +1,7 @@
 #pragma once
+#include <cstddef>
 #include <cstdint>
-#include <SFML/System.hpp>
+#include "sfmlProxyTypes.h"
 
 namespace sc{
 	// mutations are done by recursively subdividing the genome with probability p=NUMERATOR/2^DENOMINATOR_LENGTH to continue at each step

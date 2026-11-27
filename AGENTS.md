@@ -2,8 +2,8 @@
 Global configuration can be found in the root folder while the gridLife subdirectory houses most of the code.
 
 # BUILD
- - the premade BUILDCOMMAND builds an app in Release mode with a GUI (requires SFML and GLEW)
- - the premade BUILDPERFTEST builds an app in RelWithDebInfo mode without a gui (does NOT require SFML/GLEW)
+ - the premade BUILDCOMMAND builds an app in Release mode with a GUI (requires SFML)
+ - the premade BUILDPERFTEST builds an app in RelWithDebInfo mode without a gui (does NOT require SFML)
  - output lands in out/[OS]/[BUILD_TYPE]/gridLife
  - if needed, cmake can be invoced manually with -DCMAKE_BUILD_TYPE:STRING=... to set build type and or -Dinteractive_sim:BOOL=true to enable the GUI
  

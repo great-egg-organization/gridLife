@@ -26,8 +26,7 @@ set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${FullOutputDir}/static libs")
 set (CMAKE_LIBRARY_OUTPUT_DIRECTORY "${FullOutputDir}")
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY "${FullOutputDir}")
 
-# TODO
-#if (interactive_sim)
+if (interactive_sim)
 	set(SFML_VERSION "3.1.0")
 	
 	include(FetchContent)
@@ -42,7 +41,7 @@ set (CMAKE_RUNTIME_OUTPUT_DIRECTORY "${FullOutputDir}")
 	if(NOT sfml_POPULATED)
     FetchContent_MakeAvailable(sfml)
 	endif()
-#endif()
+endif()
 
 # Include sub-projects.
 add_subdirectory("gridLife")

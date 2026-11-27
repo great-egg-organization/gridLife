@@ -6,13 +6,12 @@
 #include <immintrin.h>
 #include <random>
 #ifdef INTERACTIVE_SIM
-#include <GL/glew.h>
-#include <GL/glut.h>
 #include <SFML/Graphics.hpp>
 #include <SFML/Graphics/Shader.hpp>
 #include <SFML/System.hpp>
 #include <SFML/System/Vector2.hpp>
 #endif
+#include "sfmlProxyTypes.h"
 
 enum CellType : unsigned char { NONE, LEAF, BRANCH, SPROUT, ROOT, ANTENNA };
 
